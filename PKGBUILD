@@ -2,21 +2,27 @@
 
 pkgbase=linux-amd-raven
 _srcname=linux
-pkgver=4.20.rc7
-pkgrel=3
+gitver=v5.1.16
+pkgver=5.1.v.16
+pkgrel=1
 arch=('x86_64')
-url="http://www.kernel.org/"
+url="https://www.kernel.org/"
 license=('GPL2')
 makedepends=('xmlto' 'docbook-xsl' 'kmod' 'inetutils' 'bc' 'git' 'libelf')
 options=('!strip')
 
-source=('git+https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux'
+#https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/log/?h=linux-4.19.y
+
+#source=('git+https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux'
+source=('git+https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git'
         # the main kernel config files
         'config.x86_64'
         # standard config files for mkinitcpio ramdisk
         "${pkgbase}.preset")
 sha256sums=('SKIP'
+             #config.x86_64
             '04f9b19d0dde49a132d79006663cac6cfe3a0eb1252ca33e9694a63f00bccb65'
+             #.preset file
             '0ac0cf410b0f3eeaa07d41505613e118ea59e01144e905f2dc0a808379f87e87')
 
 _kernelname=${pkgbase#linux}
@@ -27,7 +33,8 @@ pkgver() {
 
 prepare() {
   cd "${_srcname}"
-  git checkout tags/v4.20-rc7
+  #We want to base this on the release
+  git checkout tags/$gitver
   if [ "${CARCH}" = "x86_64" ]; then
     cat "${srcdir}/config.x86_64" > ./.config
   else
@@ -228,6 +235,11 @@ _package-headers() {
 
   # remove unneeded architectures
   rm -rf "${pkgdir}"/usr/lib/modules/${_kernver}/build/arch/{alpha,arc,arm,arm26,arm64,avr32,blackfin,c6x,cris,frv,h8300,hexagon,ia64,m32r,m68k,m68knommu,metag,mips,microblaze,mn10300,openrisc,parisc,powerpc,ppc,s390,score,sh,sh64,sparc,sparc64,tile,unicore32,um,v850,xtensa}
+
+  #Fix build modules for dkms -- Seems to be fixed in this version!
+  #cp "arch/x86/kernel/macros.s" "${pkgdir}/usr/lib/modules/${_kernver}/build/arch/x86/kernel/."
+  #mkdir -p ${pkgdir}/usr/src/
+  #ln -s "../lib/modules/${_kernver}/build/" "${pkgdir}/usr/src/${_kernver}"
 }
 
 _package-docs() {
@@ -243,6 +255,7 @@ _package-docs() {
 
   # remove a file already in linux package
   rm -f "${pkgdir}/usr/lib/modules/${_kernver}/build/Documentation/DocBook/Makefile"
+
 }
 
 pkgname=("${pkgbase}" "${pkgbase}-headers" "${pkgbase}-docs")
